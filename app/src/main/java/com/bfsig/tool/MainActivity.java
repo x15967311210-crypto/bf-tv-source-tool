@@ -13,6 +13,9 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
 
+    // 暴风信号源服务监听的广播（真正触发“信号源”列表）
+    private static final String ACTION_SOURCE_SWITCH = "baofengtv.action.SOURCE_SWITCH";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,17 +32,17 @@ public class MainActivity extends Activity {
         title.setGravity(Gravity.CENTER);
         root.addView(title);
 
-        root.addView(makeButton("① 打开 HDMI / 电视画面",
-                "com.baofengtv.tvplayer", "com.baofengtv.tvplayer.MainActivity"));
-        root.addView(makeButton("② 信号源切换（风UI）",
-                "com.baofengtv.launcher3d", "com.baofengtv.launcher3d.MainActivity"));
+        root.addView(makeButton("① 信号源 / 输入源（切换）",
+                null, null, ACTION_SOURCE_SWITCH));
+        root.addView(makeButton("② 打开 HDMI / 电视画面",
+                "com.baofengtv.tvplayer", "com.baofengtv.tvplayer.MainActivity", null));
         root.addView(makeButton("③ 系统设置",
-                "com.baofengtv.settings", "com.baofengtv.settings.MainActivity"));
+                "com.baofengtv.settings", "com.baofengtv.settings.MainActivity", null));
 
         setContentView(root);
     }
 
-    private Button makeButton(String text, final String pkg, final String cls) {
+    private Button makeButton(String text, final String pkg, final String cls, final String action) {
         Button b = new Button(this);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -49,18 +52,21 @@ public class MainActivity extends Activity {
         b.setText(text);
         b.setTextSize(20);
         b.setAllCaps(false);
-        b.setOnClickListener(v -> open(pkg, cls));
+        b.setOnClickListener(v -> {
+            try {
+                if (action != null) {
+                    sendBroadcast(new Intent(action));
+                    Toast.makeText(MainActivity.this, "已触发信号源", Toast.LENGTH_SHORT).show();
+                } else {
+                    Intent i = new Intent();
+                    i.setClassName(pkg, cls);
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(i);
+                }
+            } catch (Exception e) {
+                Toast.makeText(MainActivity.this, "失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
         return b;
-    }
-
-    private void open(String pkg, String cls) {
-        try {
-            Intent i = new Intent();
-            i.setClassName(pkg, cls);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(i);
-        } catch (Exception e) {
-            Toast.makeText(this, "打不开：" + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
     }
 }
